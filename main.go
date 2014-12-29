@@ -4,16 +4,22 @@ import "fmt"
 import "os"
 import "os/exec"
 import "path"
+import "github.com/spf13/viper"
 
 const utility = "rsync"
 
+func init() {
+	loadConfig()
+}
+
 func main() {
-	options := []string{
-		"-a",
-		path.Join(getCurrentDirectory(), "a"),
-		path.Join(getCurrentDirectory(), "b"),
+	options := viper.GetStringSlice("options")
+	directoryOptions := viper.GetStringMapString("directories")
+	directories := []string{
+		path.Join(getCurrentDirectory(), directoryOptions["from"]),
+		path.Join(getCurrentDirectory(), directoryOptions["to"]),
 	}
-	sync(options)
+	sync(append(options, directories...))
 }
 
 func sync(options []string) {
@@ -23,6 +29,12 @@ func sync(options []string) {
 		fmt.Println("%s", error)
 	}
 	fmt.Printf("%s", out)
+}
+
+func loadConfig() {
+	viper.SetConfigName("gorsync")
+	viper.AddConfigPath(getCurrentDirectory())
+	viper.ReadInConfig()
 }
 
 func getCurrentDirectory() string {
