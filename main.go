@@ -12,9 +12,9 @@ var (
 )
 
 func init() {
-	loadConfig()
 	olog = log.New(os.Stdout, "", 0)
 	elog = log.New(os.Stderr, "", 0)
+	loadConfig()
 }
 
 func main() {
@@ -27,5 +27,8 @@ func loadConfig() {
 	viper.SetConfigName("gorsync")
 	configDirectory, _ := getCurrentDirectory()
 	viper.AddConfigPath(configDirectory)
-	viper.ReadInConfig()
+	error := viper.ReadInConfig()
+	if error != nil {
+		elog.Fatal("No ./gorsync.yml|json|toml config file found!")
+	}
 }
