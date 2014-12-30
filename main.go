@@ -1,47 +1,70 @@
 package main
 
-import "fmt"
-import "os"
-import "os/exec"
-import "path"
-import "github.com/spf13/viper"
+import (
+	"bytes"
+	"github.com/spf13/viper"
+	"log"
+	"os"
+	"os/exec"
+	"path"
+	"strings"
+)
 
 const utility = "rsync"
 
+var (
+	olog *log.Logger
+	elog *log.Logger
+)
+
 func init() {
 	loadConfig()
+	olog = log.New(os.Stdout, "", 0)
+	elog = log.New(os.Stderr, "", 0)
 }
 
 func main() {
 	options := viper.GetStringSlice("options")
 	directoryOptions := viper.GetStringMapString("directories")
+	currentDirectory, error := getCurrentDirectory()
+
+	if error != nil {
+		elog.Fatal(error.Error())
+	}
+
 	directories := []string{
-		path.Join(getCurrentDirectory(), directoryOptions["from"]),
-		path.Join(getCurrentDirectory(), directoryOptions["to"]),
+		path.Join(currentDirectory, directoryOptions["from"]),
+		path.Join(currentDirectory, directoryOptions["to"]),
 	}
 	sync(append(options, directories...))
+	olog.Println("Sycing succesful!")
 }
 
 func sync(options []string) {
-	out, error := exec.Command(utility, options...).Output()
-	if error != nil {
-		fmt.Println("An error occurred while syncing!")
-		fmt.Println("%s", error)
+	cmd := exec.Command(utility, options...)
+	var stderr bytes.Buffer
+	var stdout bytes.Buffer
+	cmd.Stdin = os.Stdin
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	if error := cmd.Run(); error != nil {
+		elog.Fatal(stderr.String() + "\n" + error.Error())
 	}
-	fmt.Printf("%s", out)
+
+	stdoutString := stdout.String()
+	trmString := strings.TrimSpace(stdoutString)
+	if len(trmString) > 0 {
+		olog.Println(trmString)
+	}
 }
 
 func loadConfig() {
 	viper.SetConfigName("gorsync")
-	viper.AddConfigPath(getCurrentDirectory())
+	configDirectory, _ := getCurrentDirectory()
+	viper.AddConfigPath(configDirectory)
 	viper.ReadInConfig()
 }
 
-func getCurrentDirectory() string {
-	pwd, error := os.Getwd()
-	if error != nil {
-		fmt.Println(error)
-		os.Exit(1)
-	}
-	return pwd
+func getCurrentDirectory() (string, error) {
+	return os.Getwd()
 }
