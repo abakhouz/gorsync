@@ -1,0 +1,9 @@
+#! /bin/bash
+
+util=gorsync
+
+go build && ./$util $@
+
+if [ -f ./$util ]; then
+  rm ./$util
+fi
