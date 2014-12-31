@@ -1,8 +1,6 @@
 package main
 
-import (
-	"os"
-)
+import "os"
 
 func getCurrentDirectory() (string, error) {
 	return os.Getwd()
