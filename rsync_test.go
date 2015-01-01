@@ -52,11 +52,10 @@ func TestSyncOutputsOutputIfAny(t *testing.T) {
 }
 
 func TestGenerateOptions(t *testing.T) {
-	currentPath, _ := getCurrentDirectory()
 	expectedOptions := strings.Join([]string{
 		"-au -v",
-		path.Join(currentPath, "test", "data_dir"),
-		path.Join(currentPath, "test", "sync"),
+		path.Join("test", "data_dir"),
+		path.Join("test", "sync"),
 	}, " ")
 
 	viper.Set("options", []string{"-au", "-v"})

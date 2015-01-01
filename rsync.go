@@ -5,7 +5,6 @@ import (
 	"github.com/spf13/viper"
 	"os"
 	"os/exec"
-	"path"
 	"strings"
 )
 
@@ -34,15 +33,9 @@ func (r *rsync) sync(options []string) {
 func (r *rsync) generateOptions() []string {
 	options := viper.GetStringSlice("options")
 	directoryOptions := viper.GetStringMapString("directories")
-	currentDirectory, error := getCurrentDirectory()
-
-	if error != nil {
-		elog.Fatal(error.Error())
-	}
-
 	directories := []string{
-		path.Join(currentDirectory, directoryOptions["from"]),
-		path.Join(currentDirectory, directoryOptions["to"]),
+		directoryOptions["from"],
+		directoryOptions["to"],
 	}
 	return append(options, directories...)
 }
