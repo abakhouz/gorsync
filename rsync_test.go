@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"github.com/spf13/viper"
-	"io"
 	"log"
 	"os"
 	"path"
@@ -35,26 +34,17 @@ func TestSync(t *testing.T) {
 
 func TestSyncOutputsOutputIfAny(t *testing.T) {
 	setupConfig()
-	re, w, _ := os.Pipe()
 	oldOlog := olog
-	olog = log.New(w, "", 0)
+	buffer := new(bytes.Buffer)
+	olog = log.New(buffer, "", 0)
 
 	viper.Set("options", []string{"-av"})
 	r := r()
 	r.sync(r.generateOptions())
 
-	outC := make(chan string)
-	go func() {
-		buf := new(bytes.Buffer)
-		io.Copy(buf, re)
-		outC <- buf.String()
-	}()
-
-	w.Close()
-	out := <-outC
 	olog = oldOlog
 
-	if len(out) == 0 {
+	if len(buffer.String()) == 0 {
 		t.Error("rsync output not outputted to stdout")
 	}
 
@@ -66,13 +56,13 @@ func TestGenerateOptions(t *testing.T) {
 	expectedOptions := strings.Join([]string{
 		"-au -v",
 		path.Join(currentPath, "test", "data_dir"),
-		path.Join(currentPath, "test", "sync", "data_dir"),
+		path.Join(currentPath, "test", "sync"),
 	}, " ")
 
 	viper.Set("options", []string{"-au", "-v"})
 	viper.Set("directories", map[string]string{
 		"from": "test/data_dir",
-		"to":   "test/sync/data_dir",
+		"to":   "test/sync",
 	})
 	returnedOptions := strings.Join(r().generateOptions(), " ")
 
