@@ -1,7 +1,10 @@
 package main
 
 import (
+	"bytes"
 	"github.com/spf13/viper"
+	"io"
+	"log"
 	"os"
 	"path"
 	"strings"
@@ -25,6 +28,34 @@ func TestSync(t *testing.T) {
 	resultDirectory := path.Join(currentPath, "test", "sync", "data_dir")
 	if _, err := os.Stat(resultDirectory); os.IsNotExist(err) {
 		t.Error("rsync command failed")
+	}
+
+	cleanTestDir()
+}
+
+func TestSyncOutputsOutputIfAny(t *testing.T) {
+	setupConfig()
+	re, w, _ := os.Pipe()
+	oldOlog := olog
+	olog = log.New(w, "", 0)
+
+	viper.Set("options", []string{"-av"})
+	r := r()
+	r.sync(r.generateOptions())
+
+	outC := make(chan string)
+	go func() {
+		buf := new(bytes.Buffer)
+		io.Copy(buf, re)
+		outC <- buf.String()
+	}()
+
+	w.Close()
+	out := <-outC
+	olog = oldOlog
+
+	if len(out) == 0 {
+		t.Error("rsync output not outputted to stdout")
 	}
 
 	cleanTestDir()
